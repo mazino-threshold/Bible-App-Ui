@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1093895538304",
+    "project_id": "bbrc-40126",
+    "storage_bucket": "bbrc-40126.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1093895538304:android:bf0b99fbec0fee20834865",
+        "android_client_info": {
+          "package_name": "com.brethren.bbrc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPNZth9FPtmgtwmAQlGC1ko8O1bHunzR0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
