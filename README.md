@@ -1,4 +1,4 @@
-# Bible App – UI
+# Brethren Bible Reading – UI
 
 Mobile app for the Bible reading tracker. Members see each day's reading, tick it off, and keep a streak. Admins set the week's readings and see who has been reading.
 
@@ -20,6 +20,21 @@ Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `a` / 
 npm run typecheck        # TypeScript
 npm run lint             # ESLint
 npx expo install <pkg>   # add packages (picks versions that match the Expo SDK)
+```
+
+## Structure
+
+```
+src/
+  app/                  Screens (Expo Router: every file is a route)
+    _layout.tsx         Shows (auth) when signed out and (app) when signed in
+    (auth)/             sign-in, register, verify
+    (app)/              Signed-in screens
+  api/                  API calls: client.ts (fetch, token, errors) + one file per area
+  auth/                 Session (token and user, kept in SecureStore / localStorage on web)
+  components/           Shared UI: Button, TextField, FormError, AuthScreen
+  constants/theme.ts    Colours (from the club logo), fonts, spacing
+assets/images/          logo.png (full logo), emblem.png (logo without text), app icons and splash
 ```
 
 ## Screens
