@@ -1,4 +1,6 @@
-# Brethren Bible Reading – UI
+# Brethren Bible Reading Club – UI
+
+The app is called **Brethren Bible Reading Club** inside the app and in emails, and **BBRC** under the app icon (where longer names get cut off).
 
 Mobile app for the Bible reading tracker. Members see each day's reading, tick it off, and keep a streak. Admins set the week's readings and see who has been reading.
 

@@ -23,14 +23,14 @@ function RootNavigator() {
     if (!isLoading) SplashScreen.hide();
   }, [isLoading]);
 
-  if (isLoading) return null;
-
+  // Always render the navigator (the splash screen covers it while loading).
+  // Returning null here leaves the router nothing to resolve the opening URL against.
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-      <Stack.Protected guard={!!user}>
+      <Stack.Protected guard={!!user} redirectTo="/sign-in">
         <Stack.Screen name="(app)" />
       </Stack.Protected>
-      <Stack.Protected guard={!user}>
+      <Stack.Protected guard={!user} redirectTo="/">
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
     </Stack>

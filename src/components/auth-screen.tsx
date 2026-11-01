@@ -18,7 +18,7 @@ export function AuthScreen({ title, subtitle, children }: PropsWithChildren<Prop
           <View style={styles.brand}>
             <Image source={require('@/assets/images/emblem.png')} style={styles.emblem} contentFit="contain" />
             <Text style={styles.club}>BRETHREN</Text>
-            <Text style={styles.clubSub}>Bible Reading</Text>
+            <Text style={styles.clubSub}>Bible Reading Club</Text>
           </View>
 
           <View style={styles.heading}>
