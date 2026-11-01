@@ -2,7 +2,7 @@
 
 Mobile app for the Bible reading tracker. Members see each day's reading, tick it off, and keep a streak. Admins set the week's readings and see who has been reading.
 
-Planned stack: Expo (React Native) + TypeScript. The API lives in the [Bible-App](https://github.com/mazino-threshold/Bible-App) repo (`backend/`).
+Expo (SDK 58, React Native) + TypeScript, with Expo Router for navigation (screens live in `src/app/`). The API lives in the [Bible-App](https://github.com/mazino-threshold/Bible-App) repo (`backend/`).
 
 ## Getting started
 
@@ -13,6 +13,14 @@ npx expo start
 ```
 
 Run the backend locally first (`npm run dev` in `Bible-App/backend`, http://localhost:4000). On a phone, use your computer's local IP instead of `localhost`.
+
+Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `a` / `w` for an Android emulator or the browser.
+
+```
+npm run typecheck        # TypeScript
+npm run lint             # ESLint
+npx expo install <pkg>   # add packages (picks versions that match the Expo SDK)
+```
 
 ## Screens
 
