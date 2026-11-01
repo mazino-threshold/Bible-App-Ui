@@ -31,7 +31,14 @@
           "imageWidth": 200
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#5D3416"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
