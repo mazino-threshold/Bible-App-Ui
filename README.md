@@ -1,8 +1,10 @@
-# Bible App – UI
+# Brethren Bible Reading Club – UI
+
+The app is called **Brethren Bible Reading Club** inside the app and in emails, and **BBRC** under the app icon (where longer names get cut off).
 
 Mobile app for the Bible reading tracker. Members see each day's reading, tick it off, and keep a streak. Admins set the week's readings and see who has been reading.
 
-Planned stack: Expo (React Native) + TypeScript. The API lives in the [Bible-App](https://github.com/mazino-threshold/Bible-App) repo (`backend/`).
+Expo (SDK 58, React Native) + TypeScript, with Expo Router for navigation (screens live in `src/app/`). The API lives in the [Bible-App](https://github.com/mazino-threshold/Bible-App) repo (`backend/`).
 
 ## Getting started
 
@@ -13,6 +15,29 @@ npx expo start
 ```
 
 Run the backend locally first (`npm run dev` in `Bible-App/backend`, http://localhost:4000). On a phone, use your computer's local IP instead of `localhost`.
+
+Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `a` / `w` for an Android emulator or the browser.
+
+```
+npm run typecheck        # TypeScript
+npm run lint             # ESLint
+npx expo install <pkg>   # add packages (picks versions that match the Expo SDK)
+```
+
+## Structure
+
+```
+src/
+  app/                  Screens (Expo Router: every file is a route)
+    _layout.tsx         Shows (auth) when signed out and (app) when signed in
+    (auth)/             sign-in, register, verify
+    (app)/              Signed-in screens
+  api/                  API calls: client.ts (fetch, token, errors) + one file per area
+  auth/                 Session (token and user, kept in SecureStore / localStorage on web)
+  components/           Shared UI: Button, TextField, FormError, AuthScreen
+  constants/theme.ts    Colours (from the club logo), fonts, spacing
+assets/images/          logo.png (full logo), emblem.png (logo without text), app icons and splash
+```
 
 ## Screens
 

@@ -12,7 +12,9 @@ expo-env.d.ts
 /android
 
 # Native build output and signing
+.kotlin/
 *.orig.*
+*.pem
 *.jks
 *.p8
 *.p12
