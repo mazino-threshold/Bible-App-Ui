@@ -8,15 +8,17 @@ import { getItem, setItem } from '@/auth/storage';
 // The token this device registered with the server, so sign-out can stop its reminders
 const TOKEN_KEY = 'push.token';
 
-// Show reminders even while the app is open
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Show reminders even while the app is open (phones only: the web app has no push reminders)
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export type PushSetupResult =
   | { status: 'registered'; token: string }
