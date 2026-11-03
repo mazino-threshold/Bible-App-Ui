@@ -31,3 +31,13 @@ export function formatWeekRange(start: string, end: string) {
   const from = sameMonth ? format(start, { day: 'numeric' }) : formatShortDate(start);
   return `${from} – ${format(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
 }
+
+/** '2 Nov 2026' for a full timestamp from the API, in Nigeria time. */
+export function formatTimestampDate(timestamp: string) {
+  return new Date(timestamp).toLocaleDateString('en-GB', {
+    timeZone: 'Africa/Lagos',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}

@@ -13,6 +13,16 @@ export interface User {
   createdAt: string;
 }
 
+/** A user as shown on the admin's member list. */
+export interface AdminUser extends User {
+  active: boolean;
+  /** null while the account is active. */
+  deactivatedAt: string | null;
+  deactivationReason: string | null;
+}
+
+export type UserStatusFilter = 'active' | 'deactivated' | 'all';
+
 export interface SignInResult {
   token: string;
   user: User;
@@ -86,6 +96,8 @@ export interface ReportUser {
   name: string;
   email: string;
   role: Role;
+  /** Whether the account is active now (someone deactivated mid-week still appears for that week). */
+  active: boolean;
   daysRead: number;
   checkedInDates: string[];
 }

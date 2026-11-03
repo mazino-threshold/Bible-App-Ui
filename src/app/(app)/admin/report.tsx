@@ -156,11 +156,14 @@ function UserRow({ user, report }: { user: ReportUser; report: WeeklyReport }) {
     <View
       style={styles.userRow}
       accessible
-      accessibilityLabel={`${user.name}: read ${user.daysRead} of ${report.daysScheduled} days`}>
+      accessibilityLabel={`${user.name}${user.active ? '' : ' (deactivated)'}: read ${user.daysRead} of ${report.daysScheduled} days`}>
       <View style={styles.userInfo}>
-        <Text style={styles.userName} numberOfLines={1}>
-          {user.name}
-        </Text>
+        <View style={styles.nameLine}>
+          <Text style={styles.userName} numberOfLines={1}>
+            {user.name}
+          </Text>
+          {user.active ? null : <Text style={styles.inactiveTag}>Deactivated</Text>}
+        </View>
         <Text style={styles.userEmail} numberOfLines={1}>
           {user.email}
         </Text>
@@ -228,7 +231,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   userInfo: { flex: 1, gap: 2 },
-  userName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  nameLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  userName: { flexShrink: 1, fontSize: 16, fontWeight: '600', color: colors.text },
+  inactiveTag: { fontSize: 11, fontWeight: '700', color: colors.error, textTransform: 'uppercase', letterSpacing: 0.6 },
   userEmail: { fontSize: 13, color: colors.textMuted },
   dots: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   dotWrap: { alignItems: 'center', gap: 2 },
