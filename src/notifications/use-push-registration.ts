@@ -2,9 +2,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { registerPushToken } from '@/api/push';
 import type { User } from '@/api/types';
 import { getPushToken, savePushToken } from './push';
+
+// Browsers have no notification responses (and expo-notifications doesn't implement them on web).
+// Chosen once per platform, so the hook order never changes between renders.
+const useLastNotificationResponse =
+  Platform.OS === 'web' ? () => null : Notifications.useLastNotificationResponse;
 
 /**
  * Registers this device for reminders once someone is signed in, and opens the readings when a reminder is tapped.
@@ -37,7 +43,7 @@ export function usePushRegistration(user: User) {
     };
   }, [user.id, wantsReminders]);
 
-  const response = Notifications.useLastNotificationResponse();
+  const response = useLastNotificationResponse();
   useEffect(() => {
     if (response?.notification.request.content.data?.type !== 'reading_reminder') return;
     // Opened from a reminder: show today's reading, freshly loaded

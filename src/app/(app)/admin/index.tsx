@@ -61,6 +61,18 @@ export default function AdminScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </Pressable>
 
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/admin/users')}
+          style={({ pressed }) => [styles.card, styles.reportCard, pressed && styles.pressed]}>
+          <Ionicons name="people" size={26} color={colors.accent} />
+          <View style={styles.flex}>
+            <Text style={styles.cardTitle}>Members</Text>
+            <Text style={styles.cardDetail}>Deactivate or reactivate members</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </Pressable>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Readings</Text>
           <Text style={styles.sectionHint}>Set the passage for each day, Monday to Saturday. Weeks that have ended are locked.</Text>

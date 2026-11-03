@@ -13,6 +13,7 @@ export default function AdminLayout() {
       }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="report" options={{ title: 'Weekly report' }} />
+      <Stack.Screen name="users" options={{ title: 'Members' }} />
       <Stack.Screen name="week/[weekStart]" options={{ title: 'Week readings' }} />
     </Stack>
   );
