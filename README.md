@@ -35,9 +35,9 @@ src/
       admin/            Stack: index (weeks list), week/[weekStart] (edit readings), report
   api/                  API calls: client.ts (fetch, token, errors), query-client.ts, one file per area
   auth/                 Session (token and user, kept in SecureStore / localStorage on web)
-  hooks/                Data hooks (TanStack Query): use-my-week.ts, use-admin.ts
+  hooks/                Data hooks (TanStack Query): use-my-week.ts, use-admin.ts, use-community.ts
   lib/                  Helpers, e.g. dates.ts (API dates are Nigeria days; never let the phone's time zone shift them)
-  components/           Shared UI: Button, TextField, FormError, QueryState, WeekNav, TodayCard, DayRow, AuthScreen
+  components/           Shared UI: Button, TextField, FormError, QueryState, WeekNav, TodayCard, CommunityCard, DayRow, AuthScreen
   constants/theme.ts    Colours (from the club logo), fonts, spacing
 assets/images/          logo.png (full logo), emblem.png (logo without text), app icons and splash
 ```
@@ -47,6 +47,7 @@ assets/images/          logo.png (full logo), emblem.png (logo without text), ap
 **Everyone**
 - **Sign up / sign in**: no passwords. Enter your email, get a 6-digit code by email, type it in.
 - **This week**: Monday to Saturday readings, today's checkbox, days read and streak.
+- **Community**: a card under today's reading inviting members to the club's group (WhatsApp for now). The text and link come from the API (`GET /community`), so they can change without a new app build.
 - **Past weeks**: what you read and missed.
 - **Profile**: name, phone and how often to get reminders (high, mid, low, off).
 
