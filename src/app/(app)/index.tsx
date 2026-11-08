@@ -5,10 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { errorMessage } from '@/api/client';
 import { useUser } from '@/auth/session';
 import { Button } from '@/components/button';
+import { CommunityCard } from '@/components/community-card';
 import { DayRow } from '@/components/day-row';
 import { TodayCard } from '@/components/today-card';
 import { WeekNav, weekLabel } from '@/components/week-nav';
 import { colors, fonts, radius, spacing } from '@/constants/theme';
+import { useCommunityLinks } from '@/hooks/use-community';
 import { useMyWeek, useToggleToday } from '@/hooks/use-my-week';
 import { addDays } from '@/lib/dates';
 
@@ -19,10 +21,13 @@ export default function HomeScreen() {
   const current = useMyWeek(null);
   const viewed = useMyWeek(weekStart);
   const toggle = useToggleToday();
+  // Optional extra: if this fails or is still loading, the section is simply left out
+  const community = useCommunityLinks();
 
   function refresh() {
     current.refetch();
     viewed.refetch();
+    community.refetch();
   }
 
   const thisWeek = current.data;
@@ -78,6 +83,8 @@ export default function HomeScreen() {
           onToggle={(read) => toggle.mutate(read)}
           error={toggle.error ? errorMessage(toggle.error) : null}
         />
+
+        {community.data?.map((link) => <CommunityCard key={link.id} link={link} />)}
 
         <View style={styles.weekHeader}>
           <WeekNav

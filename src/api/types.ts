@@ -120,3 +120,14 @@ export interface WeeklyReport {
 }
 
 export type SaveWeekInput = Record<DayName, { passage: string; notes?: string }>;
+
+/** A link to one of the club's community groups (e.g. WhatsApp). Managed on the server so it can change without an app update. */
+export interface CommunityLink {
+  id: string;
+  /** e.g. 'whatsapp' or 'telegram'. Only used to pick an icon; unknown platforms get a generic one. */
+  platform: string;
+  title: string;
+  description: string;
+  buttonLabel: string;
+  url: string;
+}
