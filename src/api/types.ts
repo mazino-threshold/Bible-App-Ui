@@ -131,3 +131,32 @@ export interface CommunityLink {
   buttonLabel: string;
   url: string;
 }
+
+/** One chapter (or verses within one chapter) of the day's reading. */
+export interface PassageChapter {
+  /** YouVersion passage id, e.g. 'GEN.16' or 'JHN.3.1-21' */
+  id: string;
+  /** e.g. 'Genesis 16' */
+  reference: string;
+  /** YouVersion Bible HTML (verse numbers, headings). Styled with YouVersion's bible.css. */
+  html: string;
+}
+
+/** Today's reading in full, from GET /passages/today. */
+export interface DayPassage {
+  date: string;
+  /** The reading as the admin entered it, e.g. 'Genesis 16-18' */
+  passage: string;
+  notes: string | null;
+  version: {
+    id: number;
+    /** e.g. 'NIV' */
+    abbreviation: string;
+    title: string;
+    /** Must always be shown with the text (publisher's licence). */
+    copyright: string;
+  };
+  /** In reading order. */
+  chapters: PassageChapter[];
+  fetchedAt: string;
+}
