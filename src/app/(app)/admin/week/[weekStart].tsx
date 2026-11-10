@@ -78,7 +78,9 @@ function WeekForm({ week, locked }: { week: Week; locked: boolean }) {
           <Text style={styles.locked}>This week has ended, so its readings can no longer be changed.</Text>
         ) : (
           <Text style={styles.hint}>
-            Enter a passage for every day, e.g. &quot;John 3:1-21&quot;. Notes are optional and shown under the passage.
+            Enter a passage for every day, e.g. &quot;Genesis 1-3&quot;, &quot;Psalm 23; Proverbs 3&quot; or &quot;John 3:1-21&quot;.
+            Short names like &quot;Gen&quot; or &quot;1 Cor&quot; work, up to 15 chapters a day. Members read the text in the app.
+            Notes are optional and shown under the passage.
           </Text>
         )}
 

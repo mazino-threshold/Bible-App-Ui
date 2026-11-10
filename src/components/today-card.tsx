@@ -1,6 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { MyDay } from '@/api/types';
+import { Button } from '@/components/button';
 import { colors, fonts, radius, spacing } from '@/constants/theme';
 import { formatLongDay } from '@/lib/dates';
 
@@ -49,6 +51,8 @@ function Content({ day, onToggle }: Pick<Props, 'day' | 'onToggle'>) {
       <Text style={styles.label}>Today&apos;s reading</Text>
       <Text style={styles.passage}>{day.passage}</Text>
       {day.notes ? <Text style={styles.body}>{day.notes}</Text> : null}
+
+      <Button title="Read the passage" variant="secondary" onPress={() => router.push('/read')} />
 
       <Pressable
         accessibilityRole="checkbox"

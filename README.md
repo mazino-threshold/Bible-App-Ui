@@ -32,12 +32,14 @@ src/
     _layout.tsx         Shows (auth) when signed out and (app) when signed in
     (auth)/             sign-in, register, verify
     (app)/              Signed-in tabs: index (readings), admin (admins only), profile
+    read.tsx            Today's Bible text, full screen over the tabs (signed in only)
       admin/            Stack: index (weeks list), week/[weekStart] (edit readings), report
   api/                  API calls: client.ts (fetch, token, errors), query-client.ts, one file per area
   auth/                 Session (token and user, kept in SecureStore / localStorage on web)
-  hooks/                Data hooks (TanStack Query): use-my-week.ts, use-admin.ts, use-community.ts
+  hooks/                Data hooks (TanStack Query): use-my-week.ts, use-today-passage.ts, use-admin.ts, use-community.ts
   lib/                  Helpers, e.g. dates.ts (API dates are Nigeria days; never let the phone's time zone shift them)
-  components/           Shared UI: Button, TextField, FormError, QueryState, WeekNav, TodayCard, CommunityCard, DayRow, AuthScreen
+  components/           Shared UI: Button, TextField, FormError, QueryState, WeekNav, TodayCard, CommunityCard, DayRow, AuthScreen,
+                        BibleText (a DOM component: renders YouVersion's HTML in a WebView on phones, inline on web)
   constants/theme.ts    Colours (from the club logo), fonts, spacing
 assets/images/          logo.png (full logo), emblem.png (logo without text), app icons and splash
 ```
@@ -47,12 +49,13 @@ assets/images/          logo.png (full logo), emblem.png (logo without text), ap
 **Everyone**
 - **Sign up / sign in**: no passwords. Enter your email, get a 6-digit code by email, type it in.
 - **This week**: Monday to Saturday readings, today's checkbox, days read and streak.
+- **Read the passage**: today's reading in full (every chapter, with verse numbers and headings) from YouVersion, with the "I've read it" checkbox at the bottom.
 - **Community**: a card under today's reading inviting members to the club's group (WhatsApp for now). The text and link come from the API (`GET /community`), so they can change without a new app build.
 - **Past weeks**: what you read and missed.
 - **Profile**: name, phone and how often to get reminders (high, mid, low, off).
 
 **Admins only**
-- **Schedule**: enter the passage (and optional notes) for each day of a week. All six days are required. Weeks that have ended can't be changed.
+- **Schedule**: enter the passage (and optional notes) for each day of a week. All six days are required. Weeks that have ended can't be changed. The server only accepts passages it can fetch the text for (e.g. `Genesis 1-3`, `Psalm 23; Proverbs 3`, `John 3:1-21`, at most 15 chapters), and shows why next to the day's field otherwise.
 - **Reports**: who read how many days in a week, with min/max day filters.
 
 ## How it works with the API
@@ -61,6 +64,7 @@ assets/images/          logo.png (full logo), emblem.png (logo without text), ap
 - Errors come back as `{ "error": "..." }`. Validation errors add `details: [{ field, message }]`, which can be shown next to each form field.
 - Weeks are always identified by their Monday (`YYYY-MM-DD`). There are no readings on Sundays.
 - "Today" is decided by the server in Nigeria time. Use `today` from `GET /check-ins/week` and each day's `status` and `canToggle` rather than the phone's clock.
+- `GET /passages/today` returns today's Bible text: `chapters[].html` is YouVersion HTML, styled with `https://cdn.youversion.com/platform/1/bible.css` inside a `data-yv-sdk` / `data-slot="yv-bible-renderer"` wrapper (see `src/components/bible-text.tsx`). **`version.copyright` must always be shown with the text** (publisher's licence). 404 = Sunday or no reading, 422 = reading not understood, 503 = YouVersion down. The first request of the day can take a few seconds (the server fetches and caches it).
 - Register the device's Expo push token with `POST /me/push-tokens` after sign-in, and pass it to `POST /auth/logout` so reminders stop after sign-out.
 
 Full API reference: http://localhost:4000/docs when the backend is running.
