@@ -41,3 +41,19 @@ export function formatTimestampDate(timestamp: string) {
     year: 'numeric',
   });
 }
+
+/** '2 November 2026' for a full timestamp from the API, in Nigeria time. */
+export function formatTimestampLongDate(timestamp: string) {
+  return new Date(timestamp).toLocaleDateString('en-GB', {
+    timeZone: 'Africa/Lagos',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/** Whole days from now until a timestamp, rounded up (0 once it has passed). */
+export function daysUntil(timestamp: string) {
+  const ms = new Date(timestamp).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / 86_400_000));
+}

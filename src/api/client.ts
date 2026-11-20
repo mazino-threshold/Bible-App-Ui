@@ -14,6 +14,7 @@ export class ApiError extends Error {
 
 let authToken: string | null = null;
 let onUnauthorized: (() => void) | null = null;
+let onForbidden: (() => void) | null = null;
 
 /** Called by the session: every request after this sends the token. */
 export function setAuthToken(token: string | null) {
@@ -23,6 +24,11 @@ export function setAuthToken(token: string | null) {
 /** Called when a signed-in request gets 401, i.e. the session has expired. */
 export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
+}
+
+/** Called when a signed-in request gets 403, e.g. an admin whose admin access was just removed. */
+export function setForbiddenHandler(handler: (() => void) | null) {
+  onForbidden = handler;
 }
 
 interface RequestOptions {
@@ -54,6 +60,7 @@ export async function api<T>(path: string, { method = 'GET', body }: RequestOpti
   if (!res.ok) {
     // Only sign out if this token was rejected, not one replaced while the request was in flight
     if (res.status === 401 && sentToken && sentToken === authToken) onUnauthorized?.();
+    if (res.status === 403 && sentToken && sentToken === authToken) onForbidden?.();
 
     const fields: Record<string, string> = {};
     for (const d of data?.details ?? []) {

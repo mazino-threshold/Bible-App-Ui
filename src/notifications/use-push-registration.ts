@@ -13,12 +13,12 @@ const useLastNotificationResponse =
   Platform.OS === 'web' ? () => null : Notifications.useLastNotificationResponse;
 
 /**
- * Registers this device for reminders once someone is signed in, and opens the readings when a reminder is tapped.
+ * Registers this device for reminders once someone is signed in, and opens the right screen when a notification is tapped.
  * Doesn't ask for notification permission while reminders are turned off in the profile.
  */
 export function usePushRegistration(user: User) {
   const client = useQueryClient();
-  const wantsReminders = user.reminderFrequency !== 'off';
+  const wantsReminders = user.remindersEnabled;
 
   useEffect(() => {
     if (!wantsReminders) return;
@@ -43,11 +43,18 @@ export function usePushRegistration(user: User) {
     };
   }, [user.id, wantsReminders]);
 
+  const isAdmin = user.role === 'admin';
   const response = useLastNotificationResponse();
   useEffect(() => {
-    if (response?.notification.request.content.data?.type !== 'reading_reminder') return;
-    // Opened from a reminder: show today's reading, freshly loaded
-    client.invalidateQueries({ queryKey: ['my-week'] });
-    router.navigate('/');
-  }, [response, client]);
+    const type = response?.notification.request.content.data?.type;
+    if (type === 'reading_reminder') {
+      // Opened from a reminder: show today's reading, freshly loaded
+      client.invalidateQueries({ queryKey: ['my-week'] });
+      router.navigate('/');
+    } else if (type === 'account_deleted' && isAdmin) {
+      // Sent to admins when a member deletes their own account
+      client.invalidateQueries({ queryKey: ['admin'] });
+      router.navigate('/admin/deleted');
+    }
+  }, [response, client, isAdmin]);
 }

@@ -68,7 +68,19 @@ export default function AdminScreen() {
           <Ionicons name="people" size={26} color={colors.accent} />
           <View style={styles.flex}>
             <Text style={styles.cardTitle}>Members</Text>
-            <Text style={styles.cardDetail}>Deactivate or reactivate members</Text>
+            <Text style={styles.cardDetail}>Make admins, deactivate, delete or restore members</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/admin/email-domains')}
+          style={({ pressed }) => [styles.card, styles.reportCard, pressed && styles.pressed]}>
+          <Ionicons name="mail" size={26} color={colors.accent} />
+          <View style={styles.flex}>
+            <Text style={styles.cardTitle}>Email domains</Text>
+            <Text style={styles.cardDetail}>Block or allow email providers for sign-up</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </Pressable>

@@ -31,6 +31,10 @@ export default function RegisterScreen() {
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fields).length > 0) {
         setFieldErrors(err.fields);
+      } else if (err instanceof ApiError && err.status === 400) {
+        // Validation errors name their field, so a bare 400 here is the email provider being refused
+        // (a disposable address, or a domain an admin has blocked)
+        setFieldErrors({ email: err.message });
       } else {
         setAlreadyRegistered(err instanceof ApiError && err.status === 409);
         setError(errorMessage(err));

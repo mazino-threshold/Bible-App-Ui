@@ -1,24 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMutation } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError, errorMessage } from '@/api/client';
-import type { ReminderFrequency } from '@/api/types';
 import { updateMe } from '@/api/users';
 import { useSession, useUser } from '@/auth/session';
 import { Button } from '@/components/button';
 import { FormError } from '@/components/form-error';
 import { TextField } from '@/components/text-field';
+import { DELETION_PRIVACY_NOTICE } from '@/constants/privacy';
 import { colors, fonts, radius, spacing } from '@/constants/theme';
-
-// Matches the backend's reminder slots (Nigeria time, Monday to Saturday)
-const REMINDER_OPTIONS: { value: ReminderFrequency; label: string; detail: string }[] = [
-  { value: 'high', label: 'Often', detail: '6 times a day: 6am, 9am, 12pm, 3pm, 6pm and 9pm' },
-  { value: 'mid', label: 'Regular', detail: '4 times a day: 6am, 12pm, 6pm and 9pm' },
-  { value: 'low', label: 'Light', detail: 'Twice a day: 6am and 9pm' },
-  { value: 'off', label: 'Off', detail: 'No reminders' },
-];
 
 export default function ProfileScreen() {
   const user = useUser();
@@ -41,16 +34,19 @@ export default function ProfileScreen() {
   const fields = save.error instanceof ApiError ? save.error.fields : {};
   const formError = save.error && Object.keys(fields).length === 0 ? errorMessage(save.error) : null;
   const detailsChanged = name.trim() !== user.name || phone.trim() !== user.phone;
+  // Show the new position while it saves, so the switch doesn't jump back
+  const pendingReminders = save.isPending ? save.variables?.remindersEnabled : undefined;
+  const remindersOn = pendingReminders ?? user.remindersEnabled;
 
   function saveDetails() {
     setSaved(false);
     save.mutate({ name: name.trim(), phone: phone.trim() });
   }
 
-  function chooseReminders(value: ReminderFrequency) {
-    if (value === user.reminderFrequency || save.isPending) return;
+  function setReminders(enabled: boolean) {
+    if (save.isPending) return;
     setSaved(false);
-    save.mutate({ reminderFrequency: value });
+    save.mutate({ remindersEnabled: enabled });
   }
 
   async function onSignOut() {
@@ -97,31 +93,23 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Reminders</Text>
-          <Text style={styles.sectionHint}>
-            We remind you on reading days until you&apos;ve ticked off the day&apos;s reading.
-          </Text>
-          <View accessibilityRole="radiogroup" style={styles.options}>
-            {REMINDER_OPTIONS.map((option) => {
-              const selected = option.value === user.reminderFrequency;
-              return (
-                <Pressable
-                  key={option.value}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: selected, disabled: save.isPending }}
-                  onPress={() => chooseReminders(option.value)}
-                  style={({ pressed }) => [styles.option, selected && styles.optionSelected, pressed && styles.pressed]}>
-                  <Ionicons
-                    name={selected ? 'radio-button-on' : 'radio-button-off'}
-                    size={22}
-                    color={selected ? colors.primary : colors.textMuted}
-                  />
-                  <View style={styles.optionText}>
-                    <Text style={styles.optionLabel}>{option.label}</Text>
-                    <Text style={styles.optionDetail}>{option.detail}</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
+          <View style={styles.toggle}>
+            <View style={styles.optionText}>
+              <Text style={styles.optionLabel}>Reading reminders</Text>
+              <Text style={styles.optionDetail}>
+                A reminder at 6 AM and a last call at 9 PM on reading days (Monday to Saturday), unless you&apos;ve
+                already read.
+              </Text>
+            </View>
+            <Switch
+              accessibilityLabel="Reading reminders"
+              value={remindersOn}
+              onValueChange={setReminders}
+              disabled={save.isPending}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.surface}
+              ios_backgroundColor={colors.border}
+            />
           </View>
         </View>
 
@@ -129,6 +117,18 @@ export default function ProfileScreen() {
         {saved && !save.isPending ? <Text style={styles.saved}>Saved</Text> : null}
 
         <Button title="Sign out" variant="secondary" onPress={onSignOut} loading={signingOut} />
+
+        <View style={styles.danger}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/delete-account')}
+            disabled={signingOut}
+            style={({ pressed }) => [styles.deleteAccount, pressed && styles.pressed]}>
+            <Ionicons name="trash-outline" size={18} color={colors.error} />
+            <Text style={styles.deleteAccountLabel}>Delete my account</Text>
+          </Pressable>
+          <Text style={styles.privacy}>{DELETION_PRIVACY_NOTICE}</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -140,12 +140,10 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: 28, fontWeight: '700', color: colors.primary, marginTop: spacing.sm },
   section: { gap: spacing.md },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-  sectionHint: { fontSize: 14, lineHeight: 20, color: colors.textMuted, marginTop: -spacing.sm },
   readOnly: { gap: spacing.xs },
   readOnlyLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
   readOnlyValue: { fontSize: 16, color: colors.textMuted },
-  options: { gap: spacing.sm },
-  option: {
+  toggle: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -155,10 +153,22 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  optionSelected: { borderColor: colors.primary, borderWidth: 1.5 },
   pressed: { opacity: 0.8 },
   optionText: { flex: 1 },
   optionLabel: { fontSize: 16, fontWeight: '600', color: colors.text },
   optionDetail: { fontSize: 13, color: colors.textMuted },
   saved: { color: colors.success, fontSize: 14, textAlign: 'center' },
+  danger: { gap: spacing.sm, marginTop: spacing.md, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
+  deleteAccount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: 50,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.error,
+  },
+  deleteAccountLabel: { fontSize: 16, fontWeight: '600', color: colors.error },
+  privacy: { fontSize: 13, lineHeight: 19, color: colors.textMuted, textAlign: 'center' },
 });

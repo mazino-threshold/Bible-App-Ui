@@ -1,13 +1,17 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { requestCode } from '@/api/auth';
 import { ApiError, errorMessage } from '@/api/client';
+import { useSession } from '@/auth/session';
 import { AuthScreen } from '@/components/auth-screen';
 import { Button } from '@/components/button';
 import { FormError } from '@/components/form-error';
 import { TextField } from '@/components/text-field';
+import { colors, radius, spacing } from '@/constants/theme';
 
 export default function SignInScreen() {
+  const { notice } = useSession();
   const [email, setEmail] = useState('');
   const [fieldError, setFieldError] = useState<string>();
   const [error, setError] = useState<string>();
@@ -31,6 +35,11 @@ export default function SignInScreen() {
 
   return (
     <AuthScreen title="Sign in" subtitle="Enter your email and we'll send you a 6-digit code.">
+      {notice ? (
+        <View accessibilityRole="alert" style={styles.notice}>
+          <Text style={styles.noticeText}>{notice}</Text>
+        </View>
+      ) : null}
       <TextField
         label="Email"
         value={email}
@@ -50,3 +59,8 @@ export default function SignInScreen() {
     </AuthScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  notice: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.sm, padding: spacing.md },
+  noticeText: { color: colors.text, fontSize: 14, lineHeight: 20 },
+});

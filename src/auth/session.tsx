@@ -1,6 +1,6 @@
 import { createContext, use, useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { getMe, logout } from '@/api/auth';
-import { setAuthToken, setUnauthorizedHandler } from '@/api/client';
+import { setAuthToken, setForbiddenHandler, setUnauthorizedHandler } from '@/api/client';
 import { queryClient } from '@/api/query-client';
 import type { User } from '@/api/types';
 import { getSavedPushToken, savePushToken } from '@/notifications/push';
@@ -17,11 +17,23 @@ interface Session {
   lastUser: User | null;
   signIn: (token: string, user: User) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Signs out on this device only (the server has already ended the session), leaving a message for the sign-in screen. */
+  signOutLocally: (notice?: string) => Promise<void>;
+  /** A message for the signed-out screens, e.g. after the account was deleted. */
+  notice: string | null;
+  clearNotice: () => void;
   /** Replace the stored user, e.g. after the profile is edited. */
   setUser: (user: User) => void;
 }
 
 const SessionContext = createContext<Session | null>(null);
+
+/** A user saved by an older version of the app had reminderFrequency ('off' meant no reminders) instead of remindersEnabled. */
+function fromSaved(saved: User & { reminderFrequency?: string }): User {
+  if (typeof saved.remindersEnabled === 'boolean') return saved;
+  const { reminderFrequency, ...user } = saved;
+  return { ...user, remindersEnabled: reminderFrequency !== 'off' };
+}
 
 export function useSession() {
   const session = use(SessionContext);
@@ -42,6 +54,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [user, setUserState] = useState<User | null>(null);
   // Kept after sign-out, so screens still on their way out can render once more without crashing
   const [lastUser, setLastUser] = useState<User | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const clear = useCallback(async () => {
     setAuthToken(null);
@@ -59,6 +72,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
   const signIn = useCallback(
     async (token: string, next: User) => {
+      setNotice(null);
       setAuthToken(token);
       await setItem(TOKEN_KEY, token);
       setUser(next);
@@ -75,12 +89,41 @@ export function SessionProvider({ children }: PropsWithChildren) {
     await clear();
   }, [clear]);
 
+  const signOutLocally = useCallback(
+    async (message?: string) => {
+      setNotice(message ?? null);
+      // The server has already dropped this device's push token
+      await savePushToken(null).catch(() => {});
+      await clear();
+    },
+    [clear],
+  );
+
+  const clearNotice = useCallback(() => setNotice(null), []);
+
   useEffect(() => {
     setUnauthorizedHandler(() => {
       clear().catch(() => {});
     });
     return () => setUnauthorizedHandler(null);
   }, [clear]);
+
+  // A 403 can mean this user's role changed (e.g. admin access removed by another admin).
+  // Refreshing the user hides the Admin tab, which moves them out of the admin screens.
+  useEffect(() => {
+    let refreshing = false;
+    setForbiddenHandler(() => {
+      if (refreshing) return;
+      refreshing = true;
+      getMe()
+        .then(setUser)
+        .catch(() => {})
+        .finally(() => {
+          refreshing = false;
+        });
+    });
+    return () => setForbiddenHandler(null);
+  }, [setUser]);
 
   // Restore the session saved on this device, then refresh the user in the background
   useEffect(() => {
@@ -89,7 +132,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
         const [token, savedUser] = await Promise.all([getItem(TOKEN_KEY), getItem(USER_KEY)]);
         if (!token || !savedUser) return;
         setAuthToken(token);
-        const saved = JSON.parse(savedUser) as User;
+        const saved = fromSaved(JSON.parse(savedUser));
         setUserState(saved);
         setLastUser(saved);
         // A 401 signs out via the unauthorized handler; any other failure (e.g. offline) keeps the saved user
@@ -105,8 +148,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }, [clear, setUser]);
 
   const value = useMemo(
-    () => ({ isLoading, user, lastUser, signIn, signOut, setUser }),
-    [isLoading, user, lastUser, signIn, signOut, setUser],
+    () => ({ isLoading, user, lastUser, signIn, signOut, signOutLocally, notice, clearNotice, setUser }),
+    [isLoading, user, lastUser, signIn, signOut, signOutLocally, notice, clearNotice, setUser],
   );
 
   return <SessionContext value={value}>{children}</SessionContext>;
