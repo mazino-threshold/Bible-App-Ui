@@ -35,6 +35,7 @@ function RootNavigator() {
         <Stack.Screen name="(app)" />
         {/* Today's Bible text, opened from the Readings tab. Full screen over the tabs, with a back button */}
         <Stack.Screen name="read" />
+        <Stack.Screen name="delete-account" />
       </Stack.Protected>
       <Stack.Protected guard={!user} redirectTo="/">
         <Stack.Screen name="(auth)" />

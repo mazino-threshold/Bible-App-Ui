@@ -1,7 +1,6 @@
 /** Shapes returned by the Bible App API (see the backend's *.types.ts files). */
 
 export type Role = 'user' | 'admin';
-export type ReminderFrequency = 'high' | 'mid' | 'low' | 'off';
 
 export interface User {
   id: string;
@@ -9,7 +8,8 @@ export interface User {
   email: string;
   phone: string;
   role: Role;
-  reminderFrequency: ReminderFrequency;
+  /** Reading reminders at 6 AM and 9 PM (Nigeria time), Monday to Saturday, until the day is ticked off. */
+  remindersEnabled: boolean;
   createdAt: string;
 }
 
@@ -22,6 +22,31 @@ export interface AdminUser extends User {
 }
 
 export type UserStatusFilter = 'active' | 'deactivated' | 'all';
+
+/** A deleted account that can still be restored, on the admin's Deleted accounts list. */
+export interface DeletedUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: Role;
+  /** Who deleted it: the member themselves, or an admin. */
+  requestedBy: 'user' | 'admin';
+  /** The admin's id when requestedBy is 'admin'. */
+  deletedBy: string | null;
+  deletionReason: string | null;
+  deletedAt: string;
+  /** Erased for good after this; it can't be restored then. */
+  purgeAfter: string;
+  checkInCount: number;
+}
+
+/** Returned when the signed-in user deletes their own account. */
+export interface AccountDeletion {
+  deletedAt: string;
+  /** Erased for good after this. */
+  purgeAfter: string;
+}
 
 export interface SignInResult {
   token: string;
@@ -159,4 +184,27 @@ export interface DayPassage {
   /** In reading order. */
   chapters: PassageChapter[];
   fetchedAt: string;
+}
+
+/**
+ * An admin rule for which email domains may register. 'block' bans the domain and its subdomains;
+ * 'allow' overrides the built-in disposable-email list. The most specific rule wins.
+ */
+export interface EmailDomainRule {
+  domain: string;
+  action: 'block' | 'allow';
+  reason: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Whether an email or domain would be allowed to register, and why. */
+export interface EmailDomainCheck {
+  domain: string;
+  blocked: boolean;
+  /** null when no list or rule matched, i.e. allowed by default. */
+  source: 'admin_block' | 'admin_allow' | 'disposable_list' | null;
+  /** The domain that matched, e.g. 'mailinator.com' for 'x.mailinator.com'. */
+  matched: string | null;
 }

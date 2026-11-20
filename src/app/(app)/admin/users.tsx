@@ -1,3 +1,5 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { errorMessage } from '@/api/client';
@@ -8,7 +10,7 @@ import { FormError } from '@/components/form-error';
 import { QueryState } from '@/components/query-state';
 import { TextField } from '@/components/text-field';
 import { colors, radius, spacing } from '@/constants/theme';
-import { useSetUserActive, useUsers } from '@/hooks/use-admin';
+import { useDeleteUser, useSetUserActive, useSetUserRole, useUsers } from '@/hooks/use-admin';
 import { formatTimestampDate } from '@/lib/dates';
 
 const FILTERS: { key: UserStatusFilter; label: string }[] = [
@@ -21,8 +23,8 @@ export default function UsersScreen() {
   const me = useUser();
   const [filter, setFilter] = useState<UserStatusFilter>('all');
   const [search, setSearch] = useState('');
-  // The member whose status is being changed; the confirm sheet is open while this is set
-  const [selected, setSelected] = useState<AdminUser | null>(null);
+  // The member being changed and how; the matching confirm sheet is open while this is set
+  const [selected, setSelected] = useState<{ user: AdminUser; action: 'status' | 'role' | 'delete' } | null>(null);
   const users = useUsers(filter);
 
   if (!users.data) {
@@ -53,6 +55,15 @@ export default function UsersScreen() {
           Deactivated members are signed out, can&apos;t sign in and get no reminders. Their readings are kept.
         </Text>
 
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.push('/admin/deleted')}
+          style={({ pressed }) => [styles.deletedLink, pressed && styles.pressed]}>
+          <Ionicons name="trash-bin-outline" size={20} color={colors.accent} />
+          <Text style={styles.deletedLinkLabel}>Deleted accounts</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {FILTERS.map((f) => (
             <Pressable
@@ -82,13 +93,28 @@ export default function UsersScreen() {
         ) : (
           <View style={styles.list}>
             {shown.map((u) => (
-              <MemberRow key={u.id} user={u} isMe={u.id === me.id} onChange={() => setSelected(u)} />
+              <MemberRow
+                key={u.id}
+                user={u}
+                isMe={u.id === me.id}
+                onChange={() => setSelected({ user: u, action: 'status' })}
+                onChangeRole={() => setSelected({ user: u, action: 'role' })}
+                onDelete={() => setSelected({ user: u, action: 'delete' })}
+              />
             ))}
           </View>
         )}
       </ScrollView>
 
-      {selected ? <ConfirmSheet user={selected} onClose={() => setSelected(null)} /> : null}
+      {selected?.action === 'status' ? <ConfirmSheet user={selected.user} onClose={() => setSelected(null)} /> : null}
+      {selected?.action === 'role' ? <RoleSheet user={selected.user} onClose={() => setSelected(null)} /> : null}
+      {selected?.action === 'delete' ? (
+        <DeleteSheet
+          user={selected.user}
+          onClose={() => setSelected(null)}
+          onDeactivateInstead={() => setSelected({ user: selected.user, action: 'status' })}
+        />
+      ) : null}
     </>
   );
 }
@@ -99,7 +125,23 @@ function emptyText(filter: UserStatusFilter) {
   return 'No members yet.';
 }
 
-function MemberRow({ user, isMe, onChange }: { user: AdminUser; isMe: boolean; onChange: () => void }) {
+function MemberRow({
+  user,
+  isMe,
+  onChange,
+  onChangeRole,
+  onDelete,
+}: {
+  user: AdminUser;
+  isMe: boolean;
+  onChange: () => void;
+  onChangeRole: () => void;
+  onDelete: () => void;
+}) {
+  const isAdmin = user.role === 'admin';
+  // The server won't make a deactivated member an admin, but an admin who was deactivated can still lose admin
+  const canChangeRole = isAdmin || user.active;
+
   return (
     <View style={[styles.row, !user.active && styles.rowInactive]}>
       <View style={styles.rowInfo}>
@@ -121,6 +163,28 @@ function MemberRow({ user, isMe, onChange }: { user: AdminUser; isMe: boolean; o
             </Text>
             {user.deactivationReason ? <Text style={styles.reason}>“{user.deactivationReason}”</Text> : null}
           </>
+        )}
+        {isMe ? null : (
+          <View style={styles.links}>
+            {canChangeRole ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={isAdmin ? `Remove admin access from ${user.name}` : `Make ${user.name} an admin`}
+                onPress={onChangeRole}
+                hitSlop={6}
+                style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+                <Text style={styles.linkLabel}>{isAdmin ? 'Remove admin' : 'Make admin'}</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${user.name}'s account`}
+              onPress={onDelete}
+              hitSlop={6}
+              style={({ pressed }) => [styles.link, pressed && styles.pressed]}>
+              <Text style={[styles.linkLabel, styles.linkLabelDanger]}>Delete</Text>
+            </Pressable>
+          </View>
         )}
       </View>
       {isMe ? (
@@ -185,6 +249,96 @@ function ConfirmSheet({ user, onClose }: { user: AdminUser; onClose: () => void 
   );
 }
 
+/** Admins can do everything, including changing other admins, so this spells that out before promoting. */
+function RoleSheet({ user, onClose }: { user: AdminUser; onClose: () => void }) {
+  const setRole = useSetUserRole();
+  const promoting = user.role !== 'admin';
+
+  function confirm() {
+    setRole.mutate({ id: user.id, role: promoting ? 'admin' : 'user' }, { onSuccess: onClose });
+  }
+
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Cancel" />
+        <View style={styles.sheet} accessibilityViewIsModal>
+          <Text style={styles.sheetTitle}>
+            {promoting ? `Make ${user.name} an admin?` : `Remove ${user.name}'s admin access?`}
+          </Text>
+          <Text style={styles.sheetBody}>
+            {promoting
+              ? 'They’ll be able to set the readings, see weekly reports, and deactivate, delete or restore members, including other admins and you. They’ll see the Admin tab next time they open the app.'
+              : 'They’ll keep their account and readings, but lose the Admin tab and everything in it. You can make them an admin again at any time.'}
+          </Text>
+          <FormError message={setRole.error ? errorMessage(setRole.error) : null} />
+          <Button title={promoting ? 'Make admin' : 'Remove admin'} onPress={confirm} loading={setRole.isPending} />
+          <Button title="Cancel" variant="secondary" onPress={onClose} disabled={setRole.isPending} />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+/** Deleting is much bigger than deactivating, so this says exactly what happens and offers Deactivate instead. */
+function DeleteSheet({
+  user,
+  onClose,
+  onDeactivateInstead,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+  onDeactivateInstead: () => void;
+}) {
+  const [reason, setReason] = useState('');
+  const remove = useDeleteUser();
+
+  function confirm() {
+    remove.mutate({ id: user.id, reason: reason.trim() || undefined }, { onSuccess: onClose });
+  }
+
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Cancel" />
+        <View style={styles.sheet} accessibilityViewIsModal>
+          <Text style={styles.sheetTitle}>Delete {user.name}&apos;s account?</Text>
+          <Text style={styles.sheetBody}>
+            They&apos;ll be signed out and removed from the app and from all weekly reports, past ones included. You can
+            restore it from Deleted accounts for 30 days.
+          </Text>
+          {user.active ? (
+            <Text style={styles.sheetBody}>
+              If they might come back, deactivate them instead. That keeps everything and can be undone at any time.
+            </Text>
+          ) : null}
+          <TextField
+            label="Reason (optional)"
+            value={reason}
+            onChangeText={setReason}
+            placeholder="e.g. Asked to leave the club"
+            maxLength={500}
+            returnKeyType="done"
+          />
+          <FormError message={remove.error ? errorMessage(remove.error) : null} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: remove.isPending, busy: remove.isPending }}
+            disabled={remove.isPending}
+            onPress={confirm}
+            style={({ pressed }) => [styles.destructive, pressed && styles.pressed, remove.isPending && styles.inactive]}>
+            <Text style={styles.destructiveLabel}>{remove.isPending ? 'Deleting…' : 'Delete account'}</Text>
+          </Pressable>
+          {user.active ? (
+            <Button title="Deactivate instead" variant="secondary" onPress={onDeactivateInstead} disabled={remove.isPending} />
+          ) : null}
+          <Button title="Cancel" variant={user.active ? 'link' : 'secondary'} onPress={onClose} disabled={remove.isPending} />
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 const styles = StyleSheet.create({
   content: { padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.md, width: '100%', maxWidth: 640, alignSelf: 'center' },
   hint: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
@@ -241,6 +395,32 @@ const styles = StyleSheet.create({
   actionLabelDeactivate: { color: colors.error },
   actionLabelReactivate: { color: colors.primaryText },
   pressed: { opacity: 0.75 },
+  inactive: { opacity: 0.5 },
+  links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.xs },
+  link: { minHeight: 32, justifyContent: 'center' },
+  linkLabel: { fontSize: 13, fontWeight: '600', color: colors.primary, textDecorationLine: 'underline' },
+  linkLabelDanger: { color: colors.error },
+  deletedLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  deletedLinkLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  destructive: {
+    minHeight: 50,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.error,
+  },
+  destructiveLabel: { fontSize: 16, fontWeight: '600', color: colors.primaryText },
   backdrop: { flex: 1, justifyContent: 'center', padding: spacing.md, backgroundColor: 'rgba(62, 36, 16, 0.45)' },
   sheet: {
     width: '100%',
